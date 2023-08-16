@@ -1,7 +1,6 @@
 package fortanix
 
 import (
-	_ "fmt"
 	"os"
 	"testing"
 
@@ -15,9 +14,9 @@ func TestDefaultDSMBackend(t *testing.T) {
 }
 
 var reqFields = map[string]string{
-	"apikey":   "FORTANIX_STORAGE_API_KEY",
-	"endpoint": "FORTANIX_STORAGE_ENDPOINT",
-	"prefix":   "FORTANIX_STORAGE_PREFIX",
+	"apikey":   "FORTANIX_APIKEY",
+	"endpoint": "FORTANIX_ENDPOINT",
+	"prefix":   "FORTANIX_PREFIX",
 }
 
 func DoDSMBackendTest(t *testing.T) {
