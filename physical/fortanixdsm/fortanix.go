@@ -289,15 +289,12 @@ func (b *fortanixBackend) List(ctx context.Context, prefix string) ([]string, er
     for _, sobj := range allSobjects.Items {
         key := strings.TrimPrefix(*sobj.Name, prefix)
         if i := strings.Index(key, "/"); i == -1 {
-            // we found the key
             allKeys = append(allKeys, key)
         } else {
-            // subdirectory
             allKeys = strutil.AppendIfMissing(allKeys, key[:i+1])
         }
     }
 
-    // Combine the keys from the original query with allKeys
     keys = append(keys, allKeys...)
 
     sort.Strings(keys)
