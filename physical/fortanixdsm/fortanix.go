@@ -191,47 +191,120 @@ func (b *fortanixBackend) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+// func (b *fortanixBackend) List(ctx context.Context, prefix string) ([]string, error) {
+// 	defer metrics.MeasureSince([]string{"fortanix", "list"}, time.Now())
+//
+// 	b.permitPool.Acquire()
+// 	defer b.permitPool.Release()
+//
+// 	prefix = addPrefix(prefix, b.prefix)
+// 	keys := []string{}
+//
+// 	// filter for DSM
+// 	activeWithName := `{"$and":[{"state":{"$in":["Active"]}},{"name":{"$text":{"$search":"` + prefix + `"}}}]}`
+//
+// 	withMetadata := true
+// 	queryParams := sdkms.ListSobjectsParams{
+// 		Filter: &activeWithName,
+// 		Sort: &sdkms.SobjectSort{
+// 			ByName: &sdkms.SobjectSortByName{},
+// 		},
+// 		WithMetadata: &withMetadata,
+// 	}
+// 	sobjs, err := b.client.ListSobjects(ctx, &queryParams)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	if sobjs.Items != nil {
+// 		for _, sobj := range sobjs.Items {
+// 			key := strings.TrimPrefix(*sobj.Name, prefix)
+// 			if i := strings.Index(key, "/"); i == -1 {
+// 				// we found the key
+// 				keys = append(keys, key)
+// 			} else {
+// 				// subdirectory
+// 				keys = strutil.AppendIfMissing(keys, key[:i+1])
+// 			}
+// 		}
+// 	}
+//
+// 	sort.Strings(keys)
+// 	return keys, nil
+// }
+//
+
+
+
 func (b *fortanixBackend) List(ctx context.Context, prefix string) ([]string, error) {
-	defer metrics.MeasureSince([]string{"fortanix", "list"}, time.Now())
+    defer metrics.MeasureSince([]string{"fortanix", "list"}, time.Now())
 
-	b.permitPool.Acquire()
-	defer b.permitPool.Release()
+    b.permitPool.Acquire()
+    defer b.permitPool.Release()
 
-	prefix = addPrefix(prefix, b.prefix)
-	keys := []string{}
+    prefix = addPrefix(prefix, b.prefix)
+    keys := []string{}
 
-	// filter for DSM
-	activeWithName := `{"$and":[{"state":{"$in":["Active"]}},{"name":{"$text":{"$search":"` + prefix + `"}}}]}`
+    // Filter for DSM
+    activeWithName := `{"$and":[{"state":{"$in":["Active"]}},{"name":{"$text":{"$search":"` + prefix + `"}}}]}`
 
-	withMetadata := true
-	queryParams := sdkms.ListSobjectsParams{
-		Filter: &activeWithName,
-		Sort: &sdkms.SobjectSort{
-			ByName: &sdkms.SobjectSortByName{},
-		},
-		WithMetadata: &withMetadata,
-	}
-	sobjs, err := b.client.ListSobjects(ctx, &queryParams)
-	if err != nil {
-		return nil, err
-	}
+    withMetadata := true
+    queryParams := sdkms.ListSobjectsParams{
+        Filter: &activeWithName,
+        Sort: &sdkms.SobjectSort{
+            ByName: &sdkms.SobjectSortByName{},
+        },
+        WithMetadata: &withMetadata,
+    }
+    sobjs, err := b.client.ListSobjects(ctx, &queryParams)
+    if err != nil {
+        return nil, err
+    }
 
-	if sobjs.Items != nil {
-		for _, sobj := range sobjs.Items {
-			key := strings.TrimPrefix(*sobj.Name, prefix)
-			if i := strings.Index(key, "/"); i == -1 {
-				// we found the key
-				keys = append(keys, key)
-			} else {
-				// subdirectory
-				keys = strutil.AppendIfMissing(keys, key[:i+1])
-			}
-		}
-	}
+    if sobjs.Items != nil {
+        for _, sobj := range sobjs.Items {
+            key := strings.TrimPrefix(*sobj.Name, prefix)
+            if i := strings.Index(key, "/"); i == -1 {
+                // we found the key
+                keys = append(keys, key)
+            } else {
+                // subdirectory
+                keys = strutil.AppendIfMissing(keys, key[:i+1])
+            }
+        }
+    }
 
-	sort.Strings(keys)
-	return keys, nil
+    // List all sobjects
+    allQueryParams := sdkms.ListSobjectsParams{
+        Sort: &sdkms.SobjectSort{
+            ByKid: &sdkms.SobjectSortByKid{},
+        },
+    }
+    allSobjects, err := b.client.ListSobjects(ctx, &allQueryParams)
+    if err != nil {
+        return nil, err
+    }
+
+    allKeys := []string{}
+    for _, sobj := range allSobjects.Items {
+        key := strings.TrimPrefix(*sobj.Name, prefix)
+        if i := strings.Index(key, "/"); i == -1 {
+            // we found the key
+            allKeys = append(allKeys, key)
+        } else {
+            // subdirectory
+            allKeys = strutil.AppendIfMissing(allKeys, key[:i+1])
+        }
+    }
+
+    // Combine the keys from the original query with allKeys
+    keys = append(keys, allKeys...)
+
+    sort.Strings(keys)
+    return keys, nil
 }
+
+
 
 func addPrefix(key string, prefix string) string {
 	// if !strings.HasPrefix(key,"logical") {
