@@ -53,6 +53,7 @@ import (
 	physCouchDB "github.com/hashicorp/vault/physical/couchdb"
 	physDynamoDB "github.com/hashicorp/vault/physical/dynamodb"
 	physEtcd "github.com/hashicorp/vault/physical/etcd"
+	physFortanix "github.com/hashicorp/vault/physical/fortanix"
 	physFoundationDB "github.com/hashicorp/vault/physical/foundationdb"
 	physGCS "github.com/hashicorp/vault/physical/gcs"
 	physManta "github.com/hashicorp/vault/physical/manta"
@@ -195,6 +196,7 @@ var (
 		"etcd":                   physEtcd.NewEtcdBackend,
 		"file_transactional":     physFile.NewTransactionalFileBackend,
 		"file":                   physFile.NewFileBackend,
+		"fortanix":               physFortanix.NewFortanixBackend,
 		"foundationdb":           physFoundationDB.NewFDBBackend,
 		"gcs":                    physGCS.NewBackend,
 		"inmem_ha":               physInmem.NewInmemHA,
